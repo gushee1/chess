@@ -14,3 +14,6 @@ Here are some features I plan on adding in future versions:
 Long term goals for this project include integrating it into a website and adding JavaScript animations to create a more widely usable playing experience, and creating a bot that will play according to basic chess principles, such as control the middle, develop pieces quickly, etc...
 
 I hope you enjoy the simulator!!!
+
+---UPDATE---
+I have started working on goal #2, and have implemented check recognition, though I am still working on ending the game with checkmate. More updates soon to come!!!
