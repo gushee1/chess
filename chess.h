@@ -18,13 +18,15 @@ private:
 	bool checkmate = false;
 
 	//converts board indexing to computer indexing for ease of use during functions
+	//requires a coordinate in "board indexing" (where the vertical index counts down)
+	//in order to work as expected in other functions
 	pair<int, int> board2comp(pair<int, int> boardPos) {
 		return { 9 - boardPos.first, boardPos.second };
 	}
 
-	//this function uses computer indexing
+	//returns the type of white piece that is located at the position on the board, 
+	//or returns n if the position is empty or is that of a black piece
 	char check_white_piece(pair<int, int> boardPos) {
-		//cout << game_board[pos.first][pos.second] << endl;
 		pair<int, int> pos = board2comp(boardPos);
 		if (game_board[pos.first][pos.second] == 'P') return 'p';
 		else if (game_board[pos.first][pos.second] == 'R') return 'r';
@@ -35,7 +37,8 @@ private:
 		else return 'n';
 	}
 
-	//this function uses computer indexing
+	//returns the type of black piece that is located at the position on the board, 
+	//or returns n if the position is empty or is that of a white piece
 	char check_black_piece(pair<int, int> boardPos) {
 		pair<int, int> pos = board2comp(boardPos);
 		if (game_board[pos.first][pos.second] == 'p') return 'p';
@@ -47,15 +50,15 @@ private:
 		else return 'n';
 	}
 
-	//returns true if there is a piece at the given location
+	//returns true if there is a piece (of any color) at the given location
+	//this function takes coords in computer indexing but converts to board indexing 
+	//within the individual checking functions
 	bool check_piece(pair<int, int> pos) {
 		return !(check_white_piece(pos) == 'n' && check_black_piece(pos) == 'n');
 	}
 
+	//checks to see if the input start and end coordinates are a valid move for a pawn
 	bool check_pawn_move(pair<int, int> start, pair<int, int> end) {
-		//cout << start.first << " " << start.second << endl;
-		//cout << end.first << " " << end.second << endl;
-		//changing all whites turns
 		if (check_white_piece(start) != 'n') {
 			if (start.first == 2) {
 				if (start.second == end.second) {
@@ -129,6 +132,7 @@ private:
 		return true;
 	}
 
+	//checks to see if the input start and end coordinates are a valid move for a rook
 	bool check_rook_move(pair<int, int> start, pair<int, int> end) {
 		pair<int, int> temp_start = start;
 		if (start.first != end.first && start.second != end.second) return false;
@@ -173,6 +177,7 @@ private:
 		return true;
 	}
 
+	//checks to see if the input start and end coordinates are a valid move for a knight
 	bool check_knight_move(pair<int, int> start, pair<int, int> end) {
 		if (start.first == end.first + 1 || start.first == end.first - 1) {
 			if (!(start.second == end.second + 2 || start.second == end.second - 2)) return false;
@@ -190,6 +195,7 @@ private:
 		return true;
 	}
 
+	//checks to see if the input start and end coordinates are a valid move for a bishop
 	bool check_bishop_move(pair<int, int> start, pair<int, int> end) {
 		pair<int, int> temp_start = start;
 		if (!(abs(start.first - end.first) == abs(start.second - end.second))) return false;
@@ -238,10 +244,13 @@ private:
 		return true;
 	}
 
+	//checks to see if the input start and end coordinates are a valid move for a queen
+	//this function relies on the fact that a queen can make the same moves as a rook or a bishop
 	bool check_queen_move(pair<int, int> start, pair<int, int> end) {
 		return (check_bishop_move(start, end) || check_rook_move(start, end));
 	}
 
+	//checks to see if the input start and end coordinates are a valid move for a king
 	bool check_king_move(pair<int, int> start, pair<int, int> end) {
 		if (((abs(start.first - end.first) + abs(start.second - end.second)) == 1)) {
 			return check_rook_move(start, end);
@@ -252,7 +261,7 @@ private:
 		else return false;
 	}
 
-	//checks if white is in check
+	//modifies the class variable "white_in_check" to be true iff white is in check
 	void check_for_check_white() {
 		pair<int, int> king_pos;
 		char piece;
@@ -307,7 +316,7 @@ private:
 		white_in_check = false;
 	}
 
-	//checks if black is in check
+	//modifies the class variable "black_in_check" to be true iff black is in check
 	void check_for_check_black() {
 		pair<int, int> king_pos;
 		char piece;
@@ -362,6 +371,8 @@ private:
 		black_in_check = false;
 	}
 public:
+	//default game constructor
+	//sets up the board for a traditional game of chess
 	chess_game() {
 		vals['a'] = 1;
 		vals['b'] = 2;
@@ -408,6 +419,7 @@ public:
 		}
 	}
 
+	//prints out a description of the version and game before initiating play
 	void initialize_game() {
 		cout << "Welcome to the Gushee chess simulator!\n";
 		cout << "Version 1.1 supports standard two player chess games, and now enforces check!!\n";
@@ -418,6 +430,7 @@ public:
 		cout << "-----------------------------------------------------------\n\n\n";
 	}
 
+	//prints the chess board as it currently stands with moves accounted for
 	void print_board() {
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
@@ -434,10 +447,12 @@ public:
 		cout << "\n";
 	}
 
+	//executes a bot move -- yet to be implemented
 	void make_bot_move() {
 
 	}
 
+	//executes a player move while enforcing that the player is making a valid move
 	void make_player_move() {
 		char letter;
 		char p_type;
@@ -484,8 +499,6 @@ public:
 				}
 				board_end = { number, vals[letter] };
 				computer_end = { 9 - number, vals[letter] };
-				//for debugging
-				//cout << end_location.first << " " << end_location.second << endl;
 				if (p_type == 'p') {
 					if (check_pawn_move(board_start, board_end)) valid_end = true;
 					else {
@@ -554,11 +567,11 @@ public:
 				}
 			}
 		}
-		/*game_board[computer_start.first][computer_start.second] = '.';
-		if (whites_turn) p_type = toupper(p_type);
-		game_board[computer_end.first][computer_end.second] = p_type;*/
 	}
 
+
+	//used to initialize the number of players--this function is currently
+	//trivial but will be more useful when the bot move function is implemented
 	void initialize_players() {
 		bool valid_players = false;
 		while (!valid_players) {
@@ -578,14 +591,17 @@ public:
 		}
 	}
 
+	//executes a game between two bots--not yet implemented
 	void play_bvb() {
 
 	}
 
+	//executes a player versus bot game--not yet implemented
 	void play_pvb() {
 
 	}
 
+	//executes a two player game of chess
 	void play_pvp() {
 		while (!checkmate) {
 			if (whites_turn) cout << "White's move\n\n";
@@ -596,6 +612,7 @@ public:
 		}
 	}
 
+	//executes the playing of the program, with any valid number of players 
 	void play_game() {
 		initialize_game();
 		initialize_players();
