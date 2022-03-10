@@ -13,7 +13,8 @@ private:
 	int num_players;
 	bool whites_turn = true;
 	map<char, int> vals;
-	bool check = false;
+	bool white_in_check = false;
+	bool black_in_check = false;
 	bool checkmate = false;
 
 	//converts board indexing to computer indexing for ease of use during functions
@@ -54,7 +55,8 @@ private:
 	bool check_pawn_move(pair<int, int> start, pair<int, int> end) {
 		//cout << start.first << " " << start.second << endl;
 		//cout << end.first << " " << end.second << endl;
-		if (whites_turn) {
+		//changing all whites turns
+		if (check_white_piece(start) != 'n') {
 			if (start.first == 2) {
 				if (start.second == end.second) {
 					if (!(end.first - start.first <= 2 && end.first - start.first > 0)) return false;
@@ -128,6 +130,7 @@ private:
 	}
 
 	bool check_rook_move(pair<int, int> start, pair<int, int> end) {
+		pair<int, int> temp_start = start;
 		if (start.first != end.first && start.second != end.second) return false;
 		if (start.first == end.first) {
 			if (start.second < end.second) {
@@ -161,10 +164,10 @@ private:
 				}
 			}
 		}
-		if (whites_turn) {
+		if (check_white_piece(temp_start) != 'n') {
 			if (!(check_white_piece(end) == 'n')) return false;
 		}
-		else if (!whites_turn) {
+		else {
 			if (!(check_black_piece(end) == 'n')) return false;
 		}
 		return true;
@@ -177,16 +180,18 @@ private:
 		else if (start.second == end.second + 1 || start.second == end.second - 1) {
 			if (!(start.first == end.first + 2 || start.first == end.first - 2)) return false;
 		}
-		if (whites_turn) {
+		else return false;
+		if (check_white_piece(start) != 'n') {
 			if (!(check_white_piece(end) == 'n')) return false;
 		}
-		else if (!whites_turn) {
+		else {
 			if (!(check_black_piece(end) == 'n')) return false;
 		}
 		return true;
 	}
 
 	bool check_bishop_move(pair<int, int> start, pair<int, int> end) {
+		pair<int, int> temp_start = start;
 		if (!(abs(start.first - end.first) == abs(start.second - end.second))) return false;
 		if (start.first < end.first && start.second < end.second) {
 			++start.first;
@@ -224,10 +229,10 @@ private:
 				--start.second;
 			}
 		}
-		if (whites_turn) {
+		if (check_white_piece(temp_start) != 'n') {
 			if (!(check_white_piece(end) == 'n')) return false;
 		}
-		else if (!whites_turn) {
+		else {
 			if (!(check_black_piece(end) == 'n')) return false;
 		}
 		return true;
@@ -245,6 +250,116 @@ private:
 			return check_bishop_move(start, end);
 		}
 		else return false;
+	}
+
+	//checks if white is in check
+	void check_for_check_white() {
+		pair<int, int> king_pos;
+		char piece;
+		for (int i = 1; i < 9; i++) {
+			for (int j = 1; j < 9; j++) {
+				if (check_white_piece({ i,j }) == 'x') king_pos = { i,j };
+			}
+		}
+		for (int k = 1; k < 9; k++) {
+			for (int l = 1; l < 9; l++) {
+				piece = check_black_piece({ k,l });
+				if (piece != 'n') {
+					if (piece == 'p') {
+						if (check_pawn_move({ k,l }, king_pos)) {
+							white_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'r') {
+						if (check_rook_move({ k,l }, king_pos)) {
+							white_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'k') {
+						if (check_knight_move({ k,l }, king_pos)) {
+							white_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'b') {
+						if (check_bishop_move({ k,l }, king_pos)) {
+							white_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'q') {
+						if (check_queen_move({ k,l }, king_pos)) {
+							white_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'k') {
+						if (check_king_move({ k,l }, king_pos)) {
+							white_in_check = true;
+							return;
+						}
+					}
+				}
+			}
+		}
+		white_in_check = false;
+	}
+
+	//checks if black is in check
+	void check_for_check_black() {
+		pair<int, int> king_pos;
+		char piece;
+		for (int i = 1; i < 9; i++) {
+			for (int j = 1; j < 9; j++) {
+				if (check_black_piece({ i,j }) == 'x') king_pos = { i,j };
+			}
+		}
+		for (int k = 1; k < 9; k++) {
+			for (int l = 1; l < 9; l++) {
+				piece = check_white_piece({ k,l });
+				if (piece != 'n') {
+					if (piece == 'p') {
+						if (check_pawn_move({ k,l }, king_pos)) {
+							black_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'r') {
+						if (check_rook_move({ k,l }, king_pos)) {
+							black_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'k') {
+						if (check_knight_move({ k,l }, king_pos)) {
+							black_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'b') {
+						if (check_bishop_move({ k,l }, king_pos)) {
+							black_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'q') {
+						if (check_queen_move({ k,l }, king_pos)) {
+							black_in_check = true;
+							return;
+						}
+					}
+					else if (piece == 'k') {
+						if (check_king_move({ k,l }, king_pos)) {
+							black_in_check = true;
+							return;
+						}
+					}
+				}
+			}
+		}
+		black_in_check = false;
 	}
 public:
 	chess_game() {
@@ -295,7 +410,9 @@ public:
 
 	void initialize_game() {
 		cout << "Welcome to the Gushee chess simulator!\n";
-		cout << "Version 1.0 supports standard two player chess games, but does not yet enforce check or checkmate, so please play by the rules!!\n";
+		cout << "Version 1.1 supports standard two player chess games, and now enforces check!!\n";
+		cout << "However, it still does not support checkmate, castling, pawn promotion, or the en passant.\n";
+		cout << "Don't worry -- the developers are hard at work implementing these features!\n";
 		cout << "To move, please write board coordinates as <letter><number>\n";
 		cout << "Enjoy the game!!!\n";
 		cout << "-----------------------------------------------------------\n\n\n";
@@ -331,6 +448,7 @@ public:
 		pair<int, int> board_start;
 		pair<int, int> board_end;
 		pair<int, int> computer_end;
+		if ((whites_turn && white_in_check) || !whites_turn && black_in_check) cout << "You are in check! Make a move that will keep your king out of danger!\n";
 		while (!valid_end) {
 			while (!valid_start) {
 				cout << "Enter position of piece to be moved: ";
@@ -405,10 +523,40 @@ public:
 					}
 				}
 			}
+			game_board[computer_start.first][computer_start.second] = '.';
+			if (whites_turn) p_type = toupper(p_type);
+			char temp = game_board[computer_end.first][computer_end.second];
+			game_board[computer_end.first][computer_end.second] = p_type;
+			if (whites_turn) {
+				check_for_check_white();
+				if (white_in_check) {
+					cout << "You cannot make a move that results in your king being in check! Please try again, or select a new piece by entering n0\n";
+					game_board[computer_start.first][computer_start.second] = p_type;
+					game_board[computer_end.first][computer_end.second] = temp;
+					valid_end = false;
+				}
+				else {
+					check_for_check_black();
+					if (black_in_check) cout << "Check!\n\n";
+				}
+			}
+			else {
+				check_for_check_black();
+				if (black_in_check) {
+					cout << "You cannot make a move that results in your king being in check! Please try again, or select a new piece by entering n0\n";
+					game_board[computer_start.first][computer_start.second] = p_type;
+					game_board[computer_end.first][computer_end.second] = temp;
+					valid_end = false;
+				}
+				else {
+					check_for_check_white();
+					if (white_in_check) cout << "Check!\n\n";
+				}
+			}
 		}
-		game_board[computer_start.first][computer_start.second] = '.';
+		/*game_board[computer_start.first][computer_start.second] = '.';
 		if (whites_turn) p_type = toupper(p_type);
-		game_board[computer_end.first][computer_end.second] = p_type;
+		game_board[computer_end.first][computer_end.second] = p_type;*/
 	}
 
 	void initialize_players() {
