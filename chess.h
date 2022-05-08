@@ -15,50 +15,53 @@ private:
 	map<char, int> vals;
 	bool white_in_check = false;
 	bool black_in_check = false;
+	bool white_can_castle_l = true;
+	bool white_can_castle_r = true;
+	bool black_can_castle_l = true;
+	bool black_can_castle_r = true;
 	bool checkmate = false;
 
 	//converts board indexing to computer indexing for ease of use during functions
-	//requires a coordinate in "board indexing" (where the vertical index counts down)
-	//in order to work as expected in other functions
 	pair<int, int> board2comp(pair<int, int> boardPos) {
 		return { 9 - boardPos.first, boardPos.second };
 	}
 
-	//returns the type of white piece that is located at the position on the board, 
-	//or returns n if the position is empty or is that of a black piece
+	//this function uses computer indexing
 	char check_white_piece(pair<int, int> boardPos) {
+		//cout << game_board[pos.first][pos.second] << endl;
 		pair<int, int> pos = board2comp(boardPos);
-		if (game_board[pos.first][pos.second] == 'P') return 'p';
-		else if (game_board[pos.first][pos.second] == 'R') return 'r';
-		else if (game_board[pos.first][pos.second] == 'K') return 'k';
-		else if (game_board[pos.first][pos.second] == 'B') return 'b';
-		else if (game_board[pos.first][pos.second] == 'Q') return 'q';
-		else if (game_board[pos.first][pos.second] == 'X') return 'x';
-		else return 'n';
+		switch (game_board[pos.first][pos.second]) {
+		case 'P': return 'p';
+		case 'R': return 'r';
+		case 'K': return 'k';
+		case 'B': return 'b';
+		case 'Q': return 'q';
+		case 'X': return 'x';
+		default: return 'n';
+		}
 	}
 
-	//returns the type of black piece that is located at the position on the board, 
-	//or returns n if the position is empty or is that of a white piece
+	//this function uses computer indexing
 	char check_black_piece(pair<int, int> boardPos) {
 		pair<int, int> pos = board2comp(boardPos);
-		if (game_board[pos.first][pos.second] == 'p') return 'p';
-		else if (game_board[pos.first][pos.second] == 'r') return 'r';
-		else if (game_board[pos.first][pos.second] == 'k') return 'k';
-		else if (game_board[pos.first][pos.second] == 'b') return 'b';
-		else if (game_board[pos.first][pos.second] == 'q') return 'q';
-		else if (game_board[pos.first][pos.second] == 'x') return 'x';
-		else return 'n';
+		switch (game_board[pos.first][pos.second]) {
+		case 'p': return 'p';
+		case 'r': return 'r';
+		case 'k': return 'k';
+		case 'b': return 'b';
+		case 'q': return 'q';
+		case 'x': return 'x';
+		default: return 'n';
+		}
 	}
 
-	//returns true if there is a piece (of any color) at the given location
-	//this function takes coords in computer indexing but converts to board indexing 
-	//within the individual checking functions
+	//returns true if there is a piece at the given location
 	bool check_piece(pair<int, int> pos) {
 		return !(check_white_piece(pos) == 'n' && check_black_piece(pos) == 'n');
 	}
 
-	//checks to see if the input start and end coordinates are a valid move for a pawn
 	bool check_pawn_move(pair<int, int> start, pair<int, int> end) {
+		//changing all whites turns
 		if (check_white_piece(start) != 'n') {
 			if (start.first == 2) {
 				if (start.second == end.second) {
@@ -132,7 +135,6 @@ private:
 		return true;
 	}
 
-	//checks to see if the input start and end coordinates are a valid move for a rook
 	bool check_rook_move(pair<int, int> start, pair<int, int> end) {
 		pair<int, int> temp_start = start;
 		if (start.first != end.first && start.second != end.second) return false;
@@ -177,7 +179,6 @@ private:
 		return true;
 	}
 
-	//checks to see if the input start and end coordinates are a valid move for a knight
 	bool check_knight_move(pair<int, int> start, pair<int, int> end) {
 		if (start.first == end.first + 1 || start.first == end.first - 1) {
 			if (!(start.second == end.second + 2 || start.second == end.second - 2)) return false;
@@ -195,7 +196,6 @@ private:
 		return true;
 	}
 
-	//checks to see if the input start and end coordinates are a valid move for a bishop
 	bool check_bishop_move(pair<int, int> start, pair<int, int> end) {
 		pair<int, int> temp_start = start;
 		if (!(abs(start.first - end.first) == abs(start.second - end.second))) return false;
@@ -244,13 +244,10 @@ private:
 		return true;
 	}
 
-	//checks to see if the input start and end coordinates are a valid move for a queen
-	//this function relies on the fact that a queen can make the same moves as a rook or a bishop
 	bool check_queen_move(pair<int, int> start, pair<int, int> end) {
 		return (check_bishop_move(start, end) || check_rook_move(start, end));
 	}
 
-	//checks to see if the input start and end coordinates are a valid move for a king
 	bool check_king_move(pair<int, int> start, pair<int, int> end) {
 		if (((abs(start.first - end.first) + abs(start.second - end.second)) == 1)) {
 			return check_rook_move(start, end);
@@ -261,7 +258,46 @@ private:
 		else return false;
 	}
 
-	//modifies the class variable "white_in_check" to be true iff white is in check
+	//use for checking during castling
+	bool check_for_check_w_pos(pair<int, int> pos) {
+		char piece;
+		for (int k = 1; k < 9; k++) {
+			for (int l = 1; l < 9; l++) {
+				piece = check_black_piece({ k,l });
+				switch (piece) {
+				case 'p': if (check_pawn_move({ k,l }, pos)) return true;
+				case 'r': if (check_rook_move({ k,l }, pos)) return true;
+				case 'k': if (check_knight_move({ k,l }, pos)) return true;
+				case 'b': if (check_bishop_move({ k,l }, pos)) return true;
+				case 'q': if (check_queen_move({ k,l }, pos)) return true;
+				case 'x': if (check_king_move({ k,l }, pos)) return true;
+				default: break;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool check_for_check_b_pos(pair<int, int> pos) {
+		char piece;
+		for (int k = 1; k < 9; k++) {
+			for (int l = 1; l < 9; l++) {
+				piece = check_white_piece({ k,l });
+				switch (piece) {
+				case 'p': if (check_pawn_move({ k,l }, pos)) return true;
+				case 'r': if (check_rook_move({ k,l }, pos)) return true;
+				case 'k': if (check_knight_move({ k,l }, pos)) return true;
+				case 'b': if (check_bishop_move({ k,l }, pos)) return true;
+				case 'q': if (check_queen_move({ k,l }, pos)) return true;
+				case 'x': if (check_king_move({ k,l }, pos)) return true;
+				default: break;
+				}
+			}
+		}
+		return false;
+	}
+
+	//checks if white is in check
 	void check_for_check_white() {
 		pair<int, int> king_pos;
 		char piece;
@@ -273,50 +309,45 @@ private:
 		for (int k = 1; k < 9; k++) {
 			for (int l = 1; l < 9; l++) {
 				piece = check_black_piece({ k,l });
-				if (piece != 'n') {
-					if (piece == 'p') {
-						if (check_pawn_move({ k,l }, king_pos)) {
-							white_in_check = true;
-							return;
-						}
+				switch (piece) {
+				case 'p':
+					if (check_pawn_move({ k,l }, king_pos)) {
+						white_in_check = true;
+						return;
 					}
-					else if (piece == 'r') {
-						if (check_rook_move({ k,l }, king_pos)) {
-							white_in_check = true;
-							return;
-						}
+				case 'r':
+					if (check_rook_move({ k,l }, king_pos)) {
+						white_in_check = true;
+						return;
 					}
-					else if (piece == 'k') {
-						if (check_knight_move({ k,l }, king_pos)) {
-							white_in_check = true;
-							return;
-						}
+				case 'k':
+					if (check_knight_move({ k,l }, king_pos)) {
+						white_in_check = true;
+						return;
 					}
-					else if (piece == 'b') {
-						if (check_bishop_move({ k,l }, king_pos)) {
-							white_in_check = true;
-							return;
-						}
+				case 'b':
+					if (check_bishop_move({ k,l }, king_pos)) {
+						white_in_check = true;
+						return;
 					}
-					else if (piece == 'q') {
-						if (check_queen_move({ k,l }, king_pos)) {
-							white_in_check = true;
-							return;
-						}
+				case 'q':
+					if (check_queen_move({ k,l }, king_pos)) {
+						white_in_check = true;
+						return;
 					}
-					else if (piece == 'k') {
-						if (check_king_move({ k,l }, king_pos)) {
-							white_in_check = true;
-							return;
-						}
+				case 'x':
+					if (check_king_move({ k,l }, king_pos)) {
+						white_in_check = true;
+						return;
 					}
+				default: break;
 				}
 			}
 		}
 		white_in_check = false;
 	}
 
-	//modifies the class variable "black_in_check" to be true iff black is in check
+	//checks if black is in check
 	void check_for_check_black() {
 		pair<int, int> king_pos;
 		char piece;
@@ -328,51 +359,133 @@ private:
 		for (int k = 1; k < 9; k++) {
 			for (int l = 1; l < 9; l++) {
 				piece = check_white_piece({ k,l });
-				if (piece != 'n') {
-					if (piece == 'p') {
-						if (check_pawn_move({ k,l }, king_pos)) {
-							black_in_check = true;
-							return;
-						}
+				switch (piece) {
+				case 'p':
+					if (check_pawn_move({ k,l }, king_pos)) {
+						black_in_check = true;
+						return;
 					}
-					else if (piece == 'r') {
-						if (check_rook_move({ k,l }, king_pos)) {
-							black_in_check = true;
-							return;
-						}
+				case 'r':
+					if (check_rook_move({ k,l }, king_pos)) {
+						black_in_check = true;
+						return;
 					}
-					else if (piece == 'k') {
-						if (check_knight_move({ k,l }, king_pos)) {
-							black_in_check = true;
-							return;
-						}
+				case 'k':
+					if (check_knight_move({ k,l }, king_pos)) {
+						black_in_check = true;
+						return;
 					}
-					else if (piece == 'b') {
-						if (check_bishop_move({ k,l }, king_pos)) {
-							black_in_check = true;
-							return;
-						}
+				case 'b':
+					if (check_bishop_move({ k,l }, king_pos)) {
+						black_in_check = true;
+						return;
 					}
-					else if (piece == 'q') {
-						if (check_queen_move({ k,l }, king_pos)) {
-							black_in_check = true;
-							return;
-						}
+				case 'q':
+					if (check_queen_move({ k,l }, king_pos)) {
+						black_in_check = true;
+						return;
 					}
-					else if (piece == 'k') {
-						if (check_king_move({ k,l }, king_pos)) {
-							black_in_check = true;
-							return;
-						}
+				case 'x':
+					if (check_king_move({ k,l }, king_pos)) {
+						black_in_check = true;
+						return;
 					}
+				default: break;
 				}
 			}
 		}
 		black_in_check = false;
 	}
+
+	//note to self
+	//need to fix the edge case where a player attempts to move their king 
+	//for the first time but the move would result in check -- the can_castle
+	//bools will be false because they attempted to move their king even though
+	//they did not end up moving it, so they still should be able to castle
+	bool check_valid_castle(char s) {
+		if (whites_turn) {
+			switch (s) {
+			case 'a':
+				if (!white_can_castle_l) {
+					cout << "You have already moved either the rook or the king, and cannot castle. Please try another move\n";
+					return false;
+				}
+				if (check_piece({ 1,2 }) || check_piece({ 1,3 }) || check_piece({ 1,4 })) {
+					cout << "You cannot castle through pieces, please try another move\n";
+					return false;
+				}
+				if (check_for_check_w_pos({ 1,2 }) || check_for_check_w_pos({ 1,3 }) || check_for_check_w_pos({ 1,4 })) {
+					cout << "You cannot castle through check, please try another move\n";
+					return false;
+				}
+				if (check_for_check_w_pos({ 1,1 })) {
+					cout << "You cannot castle into check, please try another move\n";
+					return false;
+				}
+				return true;
+			case 'h':
+				if (!white_can_castle_r) {
+					cout << "You have already moved either the rook or the king, and cannot castle. Please try another move\n";
+					return false;
+				}
+				if (check_piece({ 1,6 }) || check_piece({ 1,7 })) {
+					cout << "You cannot castle through pieces, please try another move\n";
+					return false;
+				}
+				if (check_for_check_w_pos({ 1,6 }) || check_for_check_w_pos({ 1,7 })) {
+					cout << "You cannot castle through check, please try another move\n";
+					return false;
+				}
+				if (check_for_check_w_pos({ 1,8 })) {
+					cout << "You cannot castle into check, please try another move\n";
+					return false;
+				}
+				return true;
+			}
+		}
+		else {
+			switch (s) {
+			case 'a':
+				if (!black_can_castle_l) {
+					cout << "You have already moved either the rook or the king, and cannot castle. Please try another move\n";
+					return false;
+				}
+				if (check_piece({ 8,2 }) || check_piece({ 8,3 }) || check_piece({ 8,4 })) {
+					cout << "You cannot castle through pieces, please try another move\n";
+					return false;
+				}
+				if (check_for_check_b_pos({ 8,2 }) || check_for_check_b_pos({ 8,3 }) || check_for_check_b_pos({ 8,4 })) {
+					cout << "You cannot castle through check, please try another move\n";
+					return false;
+				}
+				if (check_for_check_b_pos({ 8,1 })) {
+					cout << "You cannot castle into check, please try another move\n";
+					return false;
+				}
+				return true;
+			case 'h':
+				if (!black_can_castle_r) {
+					cout << "You have already moved either the rook or the king, and cannot castle. Please try another move\n";
+					return false;
+				}
+				if (check_piece({ 8,6 }) || check_piece({ 8,7 })) {
+					cout << "You cannot castle through pieces, please try another move\n";
+					return false;
+				}
+				if (check_for_check_b_pos({ 8,6 }) || check_for_check_b_pos({ 8,7 })) {
+					cout << "You cannot castle through check, please try another move\n";
+					return false;
+				}
+				if (check_for_check_b_pos({ 8,8 })) {
+					cout << "You cannot castle into check, please try another move\n";
+					return false;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
 public:
-	//default game constructor
-	//sets up the board for a traditional game of chess
 	chess_game() {
 		vals['a'] = 1;
 		vals['b'] = 2;
@@ -389,25 +502,40 @@ public:
 		for (int i = 1; i < 9; i++) game_board[0][i] = char(char_index++);
 		for (int j = 1; j < 9; j++) game_board[j][0] = char(int_index--);
 		for (int k = 1; k < 9; ++k) {
-			if (k == 1 || k == 8) {
+			switch (k) {
+			case 1:
 				game_board[1][k] = 'r';
 				game_board[8][k] = 'R';
-			}
-			else if (k == 2 || k == 7) {
+				break;
+			case 2:
 				game_board[1][k] = 'k';
 				game_board[8][k] = 'K';
-			}
-			else if (k == 3 || k == 6) {
+				break;
+			case 3:
 				game_board[1][k] = 'b';
 				game_board[8][k] = 'B';
-			}
-			else if (k == 4) {
+				break;
+			case 4:
 				game_board[1][k] = 'q';
 				game_board[8][k] = 'Q';
-			}
-			else {
+				break;
+			case 5:
 				game_board[1][k] = 'x';
 				game_board[8][k] = 'X';
+				break;
+			case 6:
+				game_board[1][k] = 'b';
+				game_board[8][k] = 'B';
+				break;
+			case 7:
+				game_board[1][k] = 'k';
+				game_board[8][k] = 'K';
+				break;
+			case 8:
+				game_board[1][k] = 'r';
+				game_board[8][k] = 'R';
+				break;
+			default: break;
 			}
 			game_board[2][k] = 'p';
 			game_board[7][k] = 'P';
@@ -419,18 +547,16 @@ public:
 		}
 	}
 
-	//prints out a description of the version and game before initiating play
 	void initialize_game() {
 		cout << "Welcome to the Gushee chess simulator!\n";
-		cout << "Version 1.1 supports standard two player chess games, and now enforces check!!\n";
-		cout << "However, it still does not support checkmate, castling, pawn promotion, or the en passant.\n";
+		cout << "Version 1.2 supports standard two player chess games, and \nnow enforces check and allows the player to castle!!\n";
+		cout << "However, it still does not support checkmate, pawn promotion, or the en passant.\n";
 		cout << "Don't worry -- the developers are hard at work implementing these features!\n";
 		cout << "To move, please write board coordinates as <letter><number>\n";
 		cout << "Enjoy the game!!!\n";
 		cout << "-----------------------------------------------------------\n\n\n";
 	}
 
-	//prints the chess board as it currently stands with moves accounted for
 	void print_board() {
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
@@ -447,15 +573,16 @@ public:
 		cout << "\n";
 	}
 
-	//executes a bot move -- yet to be implemented
 	void make_bot_move() {
 
 	}
 
-	//executes a player move while enforcing that the player is making a valid move
+	//note to self
+	//add switch case where possible
 	void make_player_move() {
 		char letter;
 		char p_type;
+		string move;
 		int number;
 		bool valid_start = false;
 		bool valid_end = false;
@@ -465,74 +592,146 @@ public:
 		pair<int, int> computer_end;
 		if ((whites_turn && white_in_check) || !whites_turn && black_in_check) cout << "You are in check! Make a move that will keep your king out of danger!\n";
 		while (!valid_end) {
-			while (!valid_start) {
-				cout << "Enter position of piece to be moved: ";
-				bool in_range = true;
-				bool correct_color = true;
-				cin >> letter >> number;
-				cout << endl;
-				if (vals[letter] == 0 || number < 1 || number > 8) {
-					cout << "Entry out of board range, please try again\n";
-					in_range = false;
-				}
-				board_start = { number, vals[letter] };
-				computer_start = { 9 - number, vals[letter] };
-				if (whites_turn) {
-					p_type = check_white_piece(board_start);
-				}
-				else if (!whites_turn) {
-					p_type = check_black_piece(board_start);
-				}
-				if (p_type == 'n') {
-					cout << "Entry is not the location of a piece of your color, please try again\n";
-					correct_color = false;
-				}
-				valid_start = in_range && correct_color;
-			}
 			while (!valid_end) {
-				cout << "Enter position for piece to be moved to: ";
-				cin >> letter >> number;
-				cout << endl;
-				if (letter == 'n') {
-					valid_start = false;
-					break;
-				}
-				board_end = { number, vals[letter] };
-				computer_end = { 9 - number, vals[letter] };
-				if (p_type == 'p') {
-					if (check_pawn_move(board_start, board_end)) valid_end = true;
+				while (!valid_start) {
+					cout << "Enter position of piece to be moved: ";
+					bool in_range = true;
+					bool correct_color = true;
+					//cin >> letter >> number;
+					cin >> move;
+					cout << endl;
+					if (move == "castle") {
+						bool valid_side = false;
+						char side;
+						cout << "Enter the side you would like to castle to ('a' or 'h'): ";
+						while (!valid_side) {
+							cin >> side;
+							cout << endl;
+							if (side != 'a' && side != 'h') cout << "Please enter a valid side ('a' or 'h')\n";
+							else valid_side = true;
+						}
+						if (check_valid_castle(side)) {
+							if (whites_turn) {
+								if (side == 'a') {
+									//king goes to c1, rook goes to d1
+									game_board[8][vals['c']] = 'X';
+									game_board[8][vals['e']] = '.';
+									game_board[8][vals['d']] = 'R';
+									game_board[8][vals['a']] = '.';
+								}
+								else {
+									//king goes to g1, rook goes to f1
+									game_board[8][vals['g']] = 'X';
+									game_board[8][vals['e']] = '.';
+									game_board[8][vals['f']] = 'R';
+									game_board[8][vals['h']] = '.';
+								}
+							}
+							else {
+								if (side == 'a') {
+									//king goes to c8, rook goes to d8
+									game_board[1][vals['c']] = 'x';
+									game_board[1][vals['e']] = '.';
+									game_board[1][vals['d']] = 'r';
+									game_board[1][vals['a']] = '.';
+								}
+								else {
+									//king goes to g8, rook goes to f8
+									game_board[1][vals['g']] = 'x';
+									game_board[1][vals['e']] = '.';
+									game_board[1][vals['f']] = 'r';
+									game_board[1][vals['h']] = '.';
+								}
+							}
+							return;
+						}
+						else {
+							cout << "Invalid castle, please enter another move\n\n";
+						}
+					}
+					else if (move.size() != 2 || vals[move[0]] == 0 || !(int(move[1]) > 48 && int(move[1]) < 57)) {
+						cout << "Please enter a valid move input, which can either be <letter><number>, or \"castle\"\n";
+						valid_start = false;
+					}
 					else {
-						cout << "Invalid pawn move. Please try again, or select a new piece by entering n0\n";
+						letter = move[0];
+						number = int(move[1]) - 48;
+						if (vals[letter] == 0 || number < 1 || number > 8) {
+							cout << "Entry out of board range, please try again\n";
+							in_range = false;
+						}
+						board_start = { number, vals[letter] };
+						computer_start = { 9 - number, vals[letter] };
+						if (whites_turn) {
+							p_type = check_white_piece(board_start);
+						}
+						else if (!whites_turn) {
+							p_type = check_black_piece(board_start);
+						}
+						if (p_type == 'n') {
+							cout << "Entry is not the location of a piece of your color, please try again\n";
+							correct_color = false;
+						}
+						valid_start = in_range && correct_color;
 					}
 				}
-				else if (p_type == 'r') {
-					if (check_rook_move(board_start, board_end)) valid_end = true;
-					else {
-						cout << "Invalid rook move. Please try again, or select a new piece by entering n0\n";
+				while (!valid_end) {
+					cout << "Enter position for piece to be moved to: ";
+					cin >> letter >> number;
+					cout << endl;
+					if (letter == 'n') {
+						valid_start = false;
+						break;
 					}
-				}
-				else if (p_type == 'k') {
-					if (check_knight_move(board_start, board_end)) valid_end = true;
-					else {
-						cout << "Invalid knight move. Please try again, or select a new piece by entering n0\n";
-					}
-				}
-				else if (p_type == 'b') {
-					if (check_bishop_move(board_start, board_end)) valid_end = true;
-					else {
-						cout << "Invalid bishop move. Please try again, or select a new piece by entering n0\n";
-					}
-				}
-				else if (p_type == 'q') {
-					if (check_queen_move(board_start, board_end)) valid_end = true;
-					else {
-						cout << "Invalid queen move. Please try again, or select a new piece by entering n0\n";
-					}
-				}
-				else {
-					if (check_king_move(board_start, board_end)) valid_end = true;
-					else {
-						cout << "Invalid king move. Please try again, or select a new piece by entering n0\n";
+					board_end = { number, vals[letter] };
+					computer_end = { 9 - number, vals[letter] };
+					switch (p_type) {
+					case 'p':
+						if (check_pawn_move(board_start, board_end)) valid_end = true;
+						else cout << "Invalid pawn move. Please try again, or select a new piece by entering n0\n";
+						break;
+					case 'r':
+						if (check_rook_move(board_start, board_end)) {
+							valid_end = true;
+							if (whites_turn) {
+								if (letter == 'a') white_can_castle_l = false;
+								else if (letter == 'h') white_can_castle_r = false;
+							}
+							else {
+								if (letter == 'a') black_can_castle_l = false;
+								else if (letter == 'h') black_can_castle_r = false;
+							}
+						}
+						else cout << "Invalid rook move. Please try again, or select a new piece by entering n0\n";
+						break;
+					case 'k':
+						if (check_knight_move(board_start, board_end)) valid_end = true;
+						else cout << "Invalid knight move. Please try again, or select a new piece by entering n0\n";
+						break;
+					case 'b':
+						if (check_bishop_move(board_start, board_end)) valid_end = true;
+						else cout << "Invalid bishop move. Please try again, or select a new piece by entering n0\n";
+						break;
+					case 'q':
+						if (check_queen_move(board_start, board_end)) valid_end = true;
+						else cout << "Invalid queen move. Please try again, or select a new piece by entering n0\n";
+						break;
+					case 'x':
+						if (check_king_move(board_start, board_end)) {
+							valid_end = true;
+							if (whites_turn) {
+								white_can_castle_l = false;
+								white_can_castle_r = false;
+							}
+							else {
+								black_can_castle_l = false;
+								black_can_castle_r = false;
+							}
+						}
+						else cout << "Invalid king move. Please try again, or select a new piece by entering n0\n";
+						break;
+					default:
+						break;
 					}
 				}
 			}
@@ -569,39 +768,36 @@ public:
 		}
 	}
 
-
-	//used to initialize the number of players--this function is currently
-	//trivial but will be more useful when the bot move function is implemented
 	void initialize_players() {
 		bool valid_players = false;
 		while (!valid_players) {
 			cout << "Enter number of human players: ";
 			cin >> num_players;
 			cout << endl;
-			if (num_players == 0) {
+			switch (num_players) {
+			case 0:
 				cout << "Bot versus bot play not yet available, please select another option\n";
-			}
-			else if (num_players == 1) {
+				break;
+			case 1:
 				cout << "Player versus bot play not yet available, please select another option\n";
-			}
-			else if (num_players == 2) valid_players = true;
-			else {
+				break;
+			case 2:
+				valid_players = true;
+				break;
+			default:
 				cout << "Invalid number of players. Please enter 0, 1, or 2\n";
 			}
 		}
 	}
 
-	//executes a game between two bots--not yet implemented
 	void play_bvb() {
 
 	}
 
-	//executes a player versus bot game--not yet implemented
 	void play_pvb() {
 
 	}
 
-	//executes a two player game of chess
 	void play_pvp() {
 		while (!checkmate) {
 			if (whites_turn) cout << "White's move\n\n";
@@ -612,12 +808,19 @@ public:
 		}
 	}
 
-	//executes the playing of the program, with any valid number of players 
 	void play_game() {
 		initialize_game();
 		initialize_players();
-		if (num_players == 0) play_bvb();
-		else if (num_players == 1) play_pvb();
-		else play_pvp();
+		switch (num_players) {
+		case 0:
+			play_bvb();
+			break;
+		case 1:
+			play_pvb();
+			break;
+		case 2:
+			play_pvp();
+			break;
+		}
 	}
 };
